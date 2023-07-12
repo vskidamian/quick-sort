@@ -1,19 +1,25 @@
 "use client";
+import Bar from "@/components/Bar";
 import Button from "@/components/Button";
-import { generateRandomArray } from "@/helpers";
-import { ChangeEvent, useState } from "react";
-import { clsx } from "clsx";
+import Title from "@/components/Title";
+import { COLORS, colorChange, generateRandomArray, sleep } from "@/helpers";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 
 export default function Home() {
   const [dataLength, setDataLength] = useState("");
   const [data, setData] = useState<number[]>([]);
-  const [pivot, setPivot] = useState<number | undefined>();
+  const [pivot, setPivot] = useState<number>(0);
+  const [finishedAnimation, setFinishedAnimation] = useState(false);
+  const dataRef = useRef<HTMLDivElement>(null);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const inputValue = event.target.value;
     const numericValue = parseInt(inputValue, 10);
 
-    if (Number.isNaN(numericValue) || numericValue < 1 || numericValue > 100) return;
+    if (Number.isNaN(numericValue) || numericValue < 1 || numericValue > 100) {
+      setDataLength("");
+      return;
+    }
 
     setDataLength(inputValue);
   };
@@ -24,37 +30,62 @@ export default function Home() {
     const parsedLength = parseInt(dataLength, 10);
     if (isNaN(parsedLength) || parsedLength < 1) return;
 
+    setFinishedAnimation(false);
     const newData = generateRandomArray(parsedLength);
+    setPivot(newData.length - 1);
     setData(newData);
   };
 
   const quickSort = async (arr: number[], low: number, high: number): Promise<void> => {
     if (low < high) {
       const pivotIndex = await partition(arr, low, high);
-      if (typeof pivot !== undefined && pivotIndex !== Number(pivot)) setPivot(pivotIndex);
-
       await quickSort(arr, low, pivotIndex - 1);
       await quickSort(arr, pivotIndex + 1, high);
     }
   };
 
   const partition = async (arr: number[], low: number, high: number): Promise<number> => {
+    const dataBars = dataRef.current?.children!;
+
     const pivot = arr[high];
+
+    setPivot(high);
+
     let i = low - 1;
 
     for (let j = low; j <= high - 1; j++) {
+      colorChange(dataBars[j] as HTMLDivElement, COLORS.CURRENT);
+      await sleep(500);
+      colorChange(dataBars[j] as HTMLDivElement, COLORS.DEFAULT);
+
       if (arr[j] < pivot) {
         i++;
-        await swap(arr, i, j);
+
+        if (arr[i] !== arr[j]) {
+          colorChange(dataBars[i] as HTMLDivElement, COLORS.COMPARE);
+          colorChange(dataBars[j] as HTMLDivElement, COLORS.COMPARE);
+          await swap(arr, i, j);
+          await sleep(500);
+          colorChange(dataBars[i] as HTMLDivElement, COLORS.DEFAULT);
+          colorChange(dataBars[j] as HTMLDivElement, COLORS.DEFAULT);
+        }
       }
     }
-    await swap(arr, i + 1, high);
+
+    if (arr[i + 1] !== arr[high]) {
+      colorChange(dataBars[i + 1] as HTMLDivElement, COLORS.COMPARE);
+      colorChange(dataBars[high] as HTMLDivElement, COLORS.COMPARE);
+      await swap(arr, i + 1, high);
+      await sleep(500);
+      colorChange(dataBars[i + 1] as HTMLDivElement, COLORS.DEFAULT);
+      colorChange(dataBars[high] as HTMLDivElement, COLORS.DEFAULT);
+    }
 
     return i + 1;
   };
 
   const swap = async (arr: number[], i: number, j: number): Promise<void> => {
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     const temp = arr[i];
     arr[i] = arr[j];
     arr[j] = temp;
@@ -62,16 +93,17 @@ export default function Home() {
   };
 
   const start = async () => {
+    setFinishedAnimation(false);
     await quickSort(data, 0, data.length - 1);
+    await sleep(1000);
+    setFinishedAnimation(true);
   };
+
+  const pause = async () => {};
 
   return (
     <main className="flex min-h-screen flex-col items-center p-16">
-      <div className="text-center mb-4">
-        <h1 className="font-bold text-7xl text-purple-500">Quick Sort</h1>
-        <h2 className="font-medium text-xl text-purple-300">The algorithm visualization</h2>
-      </div>
-
+      <Title title="Quick Sort" subTitle="The algorithm visualization" />
       <div>
         <div className="relative">
           <input type="text" value={dataLength} onChange={handleChange} className="block w-full p-4 text-sm border-solid bg-black rounded-lg border-purple-500 border-2 text-white outline-0" placeholder="Length of data" required />
@@ -83,20 +115,15 @@ export default function Home() {
       </div>
       {data.length > 0 ? (
         <>
-          <div className="flex items-end justify-between w-full mt-16 mb-8  ">
+          <div ref={dataRef} className="flex items-end justify-between w-full mt-16 mb-8  ">
             {data.map((value, index) => (
-              <div
-                key={index}
-                style={{
-                  width: `calc(${100 / data.length}% - 0.25rem)`,
-                  height: `${value}px`,
-                  minWidth: "1px",
-                }}
-                className={clsx("mr-1", index === pivot ? "bg-gradient-to-t from-pink-700 to-pink-400" : "bg-gradient-to-t from-purple-700 to-purple-400")}
-              ></div>
+              <Bar key={index} finishedAnimation={finishedAnimation} index={index} length={data.length} pivot={pivot} value={value} />
             ))}
           </div>
-          <Button onClick={() => start()}>START</Button>
+          <div className="flex">
+            <Button onClick={() => start()}>START</Button>
+            <Button onClick={() => pause()}>PAUSE</Button>
+          </div>
         </>
       ) : null}
     </main>
