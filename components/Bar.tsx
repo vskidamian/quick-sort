@@ -9,22 +9,19 @@ type BarProps = {
 };
 
 const Bar = ({ index, value, length, finishedAnimation, pivot }: BarProps) => {
+  const margin = 100 / length > 3 ? "0.5rem" : "0.125rem";
+
   return (
     <div
       key={index}
       style={{
-        width: `calc(${100 / length}% - 0.25rem)`,
+        width: `${100 / length}%`,
         height: `${value}px`,
-        minWidth: "1vw",
-        marginRight: "0.25rem",
+        marginRight: margin,
         backgroundColor: finishedAnimation ? COLORS.FINAL : index === pivot ? COLORS.PIVOT : COLORS.DEFAULT,
         boxShadow: finishedAnimation ? "none" : index === pivot ? "0px 1px 34px 5px rgba(247, 42, 162, 1)" : "none",
-        color: "black",
-        fontSize: "40px",
       }}
-    >
-      {value}
-    </div>
+    ></div>
   );
 };
 

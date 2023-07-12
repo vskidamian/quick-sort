@@ -3,13 +3,15 @@ import Bar from "@/components/Bar";
 import Button from "@/components/Button";
 import Title from "@/components/Title";
 import { COLORS, colorChange, generateRandomArray, sleep } from "@/helpers";
-import { ChangeEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, useRef, useState } from "react";
 
 export default function Home() {
   const [dataLength, setDataLength] = useState("");
   const [data, setData] = useState<number[]>([]);
   const [pivot, setPivot] = useState<number>(0);
   const [finishedAnimation, setFinishedAnimation] = useState(false);
+  const [isSorting, setIsSorting] = useState(false);
+
   const dataRef = useRef<HTMLDivElement>(null);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -94,35 +96,36 @@ export default function Home() {
 
   const start = async () => {
     setFinishedAnimation(false);
+    setIsSorting(true);
     await quickSort(data, 0, data.length - 1);
     await sleep(1000);
     setFinishedAnimation(true);
+    setIsSorting(false);
   };
 
-  const pause = async () => {};
-
   return (
-    <main className="flex min-h-screen flex-col items-center p-16">
+    <main className="flex min-h-screen flex-col items-center p-4 sm:p-16">
       <Title title="Quick Sort" subTitle="The algorithm visualization" />
       <div>
         <div className="relative">
           <input type="text" value={dataLength} onChange={handleChange} className="block w-full p-4 text-sm border-solid bg-black rounded-lg border-purple-500 border-2 text-white outline-0" placeholder="Length of data" required />
-          <button type="submit" onClick={() => generateData()} className="text-white absolute right-2.5 bottom-2.5 bg-purple-700 hover:bg-purple-800 font-medium rounded-lg text-sm px-4 py-2 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-800">
+          <button type="submit" disabled={isSorting} onClick={() => generateData()} className="text-white absolute right-2.5 bottom-2.5 bg-purple-700 hover:bg-purple-800 font-medium rounded-lg text-sm px-4 py-2 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-800">
             GENERATE
           </button>
         </div>
         <p className="text-sm text-purple-300">Pass the number between 1 and 100</p>
       </div>
-      {data.length > 0 ? (
+      {data.length ? (
         <>
-          <div ref={dataRef} className="flex items-end justify-between w-full mt-16 mb-8  ">
+          <div ref={dataRef} className="flex items-end justify-between w-full mt-16 mb-8">
             {data.map((value, index) => (
               <Bar key={index} finishedAnimation={finishedAnimation} index={index} length={data.length} pivot={pivot} value={value} />
             ))}
           </div>
           <div className="flex">
-            <Button onClick={() => start()}>START</Button>
-            <Button onClick={() => pause()}>PAUSE</Button>
+            <Button disabled={isSorting} onClick={start}>
+              START
+            </Button>
           </div>
         </>
       ) : null}
